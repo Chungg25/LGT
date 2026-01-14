@@ -1,0 +1,1 @@
+!python run.py --is_training 1 --model LGT --model_id transformer_test --ma_type dema --data ETTh1 --learning_rate 0.005 --data_path ETTh1.csv --train_epochs 100 --seq_len 96 --pred_len 96 --enc_in 7 --batch_size 2048 --d_model 32 --stride 12 --patience 10 --dropout 0.4
