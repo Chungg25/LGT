@@ -1,4 +1,4 @@
-from data_provider.data_factory import data_provider,data_provider1
+from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
 from models import LGT
 from utils.tools import EarlyStopping, adjust_learning_rate, visual
@@ -21,7 +21,7 @@ class Exp_Main(Exp_Basic):
 
     def _build_model(self):
         model_dict = {
-            'xPatch': LGT,
+            'LGT': LGT,
         }
         model = model_dict[self.args.model].Model(self.args).float()
 
@@ -31,10 +31,6 @@ class Exp_Main(Exp_Basic):
 
     def _get_data(self, flag):
         data_set, data_loader = data_provider(self.args, flag)
-        return data_set, data_loader
-    
-    def _get_data1(self, flag):
-        data_set, data_loader = data_provider1(self.args, flag)
         return data_set, data_loader
 
     def _select_optimizer(self):
