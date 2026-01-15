@@ -3,15 +3,15 @@
     --model LGT 
     --model_id lgt_test 
     --ma_type dema 
-    --data ETTh1 
-    --learning_rate 0.005 
-    --data_path ETTh1.csv 
+    --data ETTm1 
+    --learning_rate 0.007 
+    --data_path ETTm1.csv 
     --train_epochs 100 
     --seq_len 96 
     --pred_len 96 
     --enc_in 7 
+    --patience 10 
     --batch_size 2048 
     --d_model 32 
     --stride 12 
-    --patience 10 
-    --dropout 0.4
+    --dropout 0.1

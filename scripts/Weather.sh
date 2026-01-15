@@ -1,0 +1,15 @@
+!python run.py 
+    --is_training 1 
+    --model LGT 
+    --model_id lgt_test 
+    --ma_type dema 
+    --data custom 
+    --learning_rate 0.0007 
+    --data_path weather.csv 
+    --seq_len 96 
+    --pred_len 96 
+    --enc_in 21 
+    --batch_size 128 
+    --stride 12 
+    --dropout 0.3 
+    --d_model 32

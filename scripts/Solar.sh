@@ -1,0 +1,15 @@
+!python run.py 
+    --is_training 1 
+    --model LGT 
+    --model_id lgt_test 
+    --ma_type dema 
+    --data Solar 
+    --learning_rate 0.001 
+    --data_path solar.txt 
+    --seq_len 96 
+    --pred_len 96 
+    --enc_in 137 
+    --batch_size 32 
+    --num_layers 3 
+    --d_model 32 
+    --dropout 0.1
