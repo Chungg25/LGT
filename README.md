@@ -1,1 +1,1 @@
-# LGT
+# LGT: Local-Global Transformer with Patch-wise Modeling
