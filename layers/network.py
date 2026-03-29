@@ -10,9 +10,9 @@ class PatchChannelGLU(nn.Module):
         self.linear_b = nn.Linear(patch_len, d_model)
 
     def forward(self, x):  # x: [B*C, patch_num, patch_len]
-        a = self.linear_a(x)
-        b = torch.sigmoid(self.linear_b(x))
-        return a * b
+           a = self.linear_a(x)  # a: [B*C, patch_num, d_model]
+           b = torch.sigmoid(self.linear_b(x))  # b: [B*C, patch_num, d_model]
+           return a * b  # [B*C, patch_num, d_model]
 
 
 class LocalTemporal(nn.Module):
@@ -30,8 +30,7 @@ class LocalTemporal(nn.Module):
         )
 
     def forward(self, x):
-
-        return self.conv(x)
+           return self.conv(x)  # x: [BC*P, 1, L] -> [BC*P, 1, L]
 
 
 class AdaptiveFusion(nn.Module):
@@ -40,8 +39,8 @@ class AdaptiveFusion(nn.Module):
         self.fc = nn.Linear(pred_len, pred_len)
 
     def forward(self, s, t):
-        alpha = torch.sigmoid(self.fc(s + t))
-        return alpha * s + (1 - alpha) * t
+           alpha = torch.sigmoid(self.fc(s + t))  # alpha: [B*C, pred_len]
+           return alpha * s + (1 - alpha) * t  # [B*C, pred_len]
 
 
 class Network(nn.Module):
@@ -72,7 +71,6 @@ class Network(nn.Module):
                 d_model=d_model,
                 nhead=nhead,
                 dim_feedforward=d_model * 2,
-                # dim_feedforward = 1024,
                 dropout=dropout,
                 batch_first=True,
                 activation='gelu'
@@ -99,52 +97,51 @@ class Network(nn.Module):
 
     def forward(self, s, t):
         # s, t: [B, seq_len, C]
-        s = s.permute(0, 2, 1)  # [B, C, seq_len]
-        t = t.permute(0, 2, 1)
-        B, C, I = s.shape
+        s = s.permute(0, 2, 1)  # s: [B, C, seq_len]
+        t = t.permute(0, 2, 1)  # t: [B, C, seq_len]
+        B, C, I = s.shape  # B: batch, C: channel, I: seq_len
 
-        s_flat = s.reshape(B * C, I)
+        s_flat = s.reshape(B * C, I)  # s_flat: [B*C, seq_len]
         if self.padding_patch == 'end':
-            s_flat = self.padding_patch_layer(s_flat)
+            s_flat = self.padding_patch_layer(s_flat)  # s_flat: [B*C, seq_len + stride]
 
         s_patch = s_flat.unfold(
             dimension=-1,
             size=self.patch_len,
             step=self.stride
-        )  # [B*C, patch_num, patch_len]
+        )  # s_patch: [B*C, patch_num, patch_len]
 
-        BC, P, L = s_patch.shape
-        s_patch = s_patch.reshape(BC * P, 1, L)
-        residual = s_patch
-        s_patch = self.patch_conv(s_patch)
-        s_patch = s_patch + residual
-        s_patch = s_patch.reshape(BC, P, L)
+        BC, P, L = s_patch.shape  # BC: B*C, P: patch_num, L: patch_len
+        s_patch = s_patch.reshape(BC * P, 1, L)  # s_patch: [BC*P, 1, L]
+        residual = s_patch  # residual: [BC*P, 1, L]
+        s_patch = self.patch_conv(s_patch)  # s_patch: [BC*P, 1, L]
+        s_patch = s_patch + residual  # s_patch: [BC*P, 1, L]
+        s_patch = s_patch.reshape(BC, P, L)  # s_patch: [BC, P, L]
 
-        s_patch = self.patch_glu(s_patch)      
-        s_patch = F.gelu(s_patch)
-        s_patch = self.patch_embed(s_patch)
+        s_patch = self.patch_glu(s_patch)  # s_patch: [BC, P, d_model]
+        s_patch = F.gelu(s_patch)  # s_patch: [BC, P, d_model]
+        s_patch = self.patch_embed(s_patch)  # s_patch: [BC, P, d_model]
 
-        s_patch_residual = s_patch
-        s_patch = self.transformer_encoder(s_patch)
-        s_patch = s_patch + s_patch_residual
+        s_patch_residual = s_patch  # s_patch_residual: [BC, P, d_model]
+        s_patch = self.transformer_encoder(s_patch)  # s_patch: [BC, P, d_model]
+        s_patch = s_patch + s_patch_residual  # s_patch: [BC, P, d_model]
 
-        s_patch = self.flatten(s_patch)
-        s = self.linear_seasonal(s_patch)
-        s = self.gelu_seasonal(s)
-        s = self.dropout_seasonal(s)
-        s = self.linear_seasonal2(s)
+        s_patch = self.flatten(s_patch)  # s_patch: [BC, P*d_model]
+        s = self.linear_seasonal(s_patch)  # s: [BC, pred_len*2]
+        s = self.gelu_seasonal(s)  # s: [BC, pred_len*2]
+        s = self.dropout_seasonal(s)  # s: [BC, pred_len*2]
+        s = self.linear_seasonal2(s)  # s: [BC, pred_len]
 
-        t = t.reshape(B * C, I)
+        t = t.reshape(B * C, I)  # t: [B*C, seq_len]
 
-        t = self.linear_trend(t)
-        t = self.avg_trend(t)
-        t = self.ln_trend(t)
-        t = self.gelu_trend(t)
-        t = self.dropout_trend(t)
-        t = self.linear_trend2(t)
+        t = self.linear_trend(t)  # t: [B*C, pred_len*2]
+        t = self.avg_trend(t)  # t: [B*C, pred_len]
+        t = self.ln_trend(t)  # t: [B*C, pred_len]
+        t = self.gelu_trend(t)  # t: [B*C, pred_len]
+        t = self.dropout_trend(t)  # t: [B*C, pred_len]
+        t = self.linear_trend2(t)  # t: [B*C, pred_len]
 
-
-        x = self.adaptive_fusion(s, t)
-        x = x.view(B, C, self.pred_len)
-        x = x.permute(0, 2, 1)                
-        return x
+        x = self.adaptive_fusion(s, t)  # x: [B*C, pred_len]
+        x = x.view(B, C, self.pred_len)  # x: [B, C, pred_len]
+        x = x.permute(0, 2, 1)  # x: [B, pred_len, C]
+        return x  # [B, pred_len, C]
