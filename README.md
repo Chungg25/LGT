@@ -1,1 +1,1 @@
-# LGT
+# LGT: A Local-Global Dual-Path Transformer with Adaptive Fusion for Long-term Time Series Forecasting
